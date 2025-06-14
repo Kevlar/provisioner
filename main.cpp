@@ -1,4 +1,5 @@
 #include <App.h>
+#include <numeric>
 #include <iostream>
 #include <unordered_map>
 #include <vector>
@@ -37,19 +38,9 @@ public:
     }
 };
 
-struct Endpoint {
-    std::string dev;
-    std::string ip;
-    int cidr;
-    int vni;
-
-    Endpoint(std::string dev, std::string ip, int cidr, int vni) 
-        : dev(std::move(dev)), ip(std::move(ip)), cidr(cidr), vni(vni) {}
-};
-
 int main() {
     VNIManager vniManager;
-    std::unordered_map<int, std::vector<Endpoint>> vxlans;
+    std::unordered_map<int, std::vector<std::string>> vxlans;
 
     uWS::App().get("/VXLAN/create", [&vniManager](auto *res, auto *req) {
         int vni = vniManager.create();
@@ -58,9 +49,10 @@ int main() {
         } else {
             res->end("Error: No available VNIs.");
         }
-    }).get("/VXLAN/associate/:vni/:deviceId", [](auto *res, auto *req) {
+    }).get("/VXLAN/associate/:vni/:device/:ip", [&vxlans](auto *res, auto *req) {
         std::string vniStr = std::string(req->getParameter(0)); // Convert string_view to string
-        std::string deviceId = std::string(req->getParameter(1)); // Convert string_view to string
+        std::string device = std::string(req->getParameter(1)); // Convert string_view to string
+        std::string localIP = std::string(req->getParameter(2)); // Convert string_view to string
         int vni;
 
         try {
@@ -70,29 +62,38 @@ int main() {
             return;
         }
 
-        // Placeholder: Verify if VNI and deviceID exist
+        // Placeholder: Verify if VNI and device exist
         bool vniExists = true; // Replace with actual verification logic
         bool deviceExists = true; // Replace with actual verification logic
 
         if (vniExists && deviceExists) {
-	    //  ip link add vxlan100 type vxlan id <VNI> local <localIP> remote <remoteIP> dstport 4789 dev eth0
-	    //  ip addr add <VXLANIP>/<CIDR> dev vxlan100
-	    //  ip link set vxlan100 up
+            std::cout << "ip link add br" << vni << "type bridge" << std::endl;
+	    std::cout << "ip link set br" << vni << " up" << std::endl;
+	    std::cout << "ip link add vxlan" << vni << " type vxlan id " << vni << "dev " << device << " dstport 4789 local " << localIP << " nolearning" << std::endl;
+	    std::cout << "ip link set vxlan" << vni << " up"  << std::endl;
+	    std::cout << "ip link set vxlan" << vni << " master br" << vni << std::endl;
+	    
+	    std::cout << "fdb append <remote unique generated MAC> dev vxlan" << vni << " dst <remoteIP>" << std::endl;
+	    std::cout << "ip link add vni" << vni << " type dummy" << std::endl;
+	    std::cout << "ip link set vni" << vni << " address <unique  mac>" << std::endl;
+	    std::cout << "ip link set vni" << vni << " up" << std::endl;
+	    std::cout << "ip link set vni" << vni << " master br" << vni << std::endl;
+	    std::cout << "ip addr add 192.168.1.1/24 dev vni" << vni << std::endl;
+
 	    // add this device to the vxlans so we track needed info to tear down
-	    vxlans[vni].emplace_back(
-            res->end("Success: VNI " + std::to_string(vni) + " and Device " + deviceID + " are valid.");
+	    vxlans[vni].emplace_back(localIP);
+            res->end("Success: added endpoint " + localIP + " to VNI " + std::to_string(vni));
         } else {
             res->end("Error: VNI or Device does not exist.");
         }
-    }).get("/VXLAN/delete/:vni", [&vniManager](auto *res, auto *req) {
+    }).get("/VXLAN/:vni", [&vxlans](auto *res, auto *req) {
         int vni = std::stoi(std::string(req->getParameter(0)));
-	// look at to see what endpoints have this VNI and remove the overlay
-	// for endpoint in vxlans[vni]
-	//    std::cout << "ip link set vxlan" << endpoint.vni << " down" << endl;
-	//    std::cout << "ip addr del " << endpoint.ip << "/" << endpoint.cidr << " dev " << endpoint.dev << endl;
-	//    std::cout << "ip link del vxlan" << endpoint.vni << endl;
-        vniManager.deleteVNI(vni);
-        res->end("Released VNI: " + std::to_string(vni));
+	std::string ipString = std::accumulate(vxlans[vni].begin(), vxlans[vni].end(), std::string(),
+					       [](const std::string& a, const std::string& b) {
+						   return a.empty() ? b : a + " " + b;
+					       });
+
+        res->end("VNI: " + std::to_string(vni) + " contains the following endpoints: " + ipString);
     }).listen(9001, [](auto *token) {
         if (token) {
             std::cout << "Server listening on port 9001\n";
