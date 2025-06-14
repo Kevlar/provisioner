@@ -34,10 +34,6 @@
 /interface/add
 - takes device info, overlayId
 
-2. Implementation Choices:
-* Used C++ (over C) for access to robust standard library of abstractions allowing for more concise and readable code.  I personally prefer C++ when working with many higher level abstractions.  Rust would offer similar abstractions, but I haven't had time to come up to speed with Rust prior to this exercise, so that made the choice for me.
-* Used uWebSockets for its reputation for performance (
-* Would leverage in-memory storage to keep latency low (something like a Redis caching layer or Apache Ignite) vs traditional relational database (would still have behind Redis if that was used for caching)
 
 Instructions:
 Install dependencies:
