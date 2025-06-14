@@ -17,13 +17,13 @@ check-deps:
 	@for tool in $(REQUIRED_TOOLS); do \
 		if ! command -v $$tool >/dev/null 2>&1; then \
 			echo "Error: $$tool not found."; exit 1; \
-		fi \
+		fi; \
 	done
 	@echo "Checking for required packages..."
 	@for pkg in $(REQUIRED_PKGS); do \
 		if ! pkg-config --exists $$pkg; then \
 			echo "Error: Development package for '$$pkg' not found."; exit 1; \
-		fi \
+		fi; \
 	done
 	@echo "All dependencies found."
 
@@ -32,7 +32,10 @@ $(UWS_DIR):
 	git clone --recurse-submodules $(UWS_REPO)
 
 # --- Build uSockets ---
-$(UWS_DIR)/uSockets/uSockets.a: $(UWS_DIR)
+# Using an order-only dependency (the "|" symbol) makes sure that
+# the prerequisite (uWebSockets directory) is built first,
+# without forcing uSockets.a to rebuild when the directory timestamp changes.
+$(UWS_DIR)/uSockets/uSockets.a: | $(UWS_DIR)
 	$(MAKE) -C $(UWS_DIR) WITH_OPENSSL=1 examples
 
 # --- Lazy eval to avoid early expansion ---
@@ -50,4 +53,4 @@ clean:
 	rm -f $(TARGET)
 
 # --- Phony rules ---
-.PHONY: clean check-deps $(TARGET)
+.PHONY: clean check-deps
