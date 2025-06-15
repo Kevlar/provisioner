@@ -11,6 +11,7 @@ Returns an unused VNI
 {
   "error": "No VNI available"
 }
+```
 
 ### Delete VXLAN [DELETE /VXLAN/delete/{VNI}]
 Remove all VXLAN devices associated with VNI
@@ -48,6 +49,7 @@ Get the UUIDs representing the endpoints for VXLAN with VNI
     "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
   ]
 }
+```
 - Response 404
 ```json
 {
