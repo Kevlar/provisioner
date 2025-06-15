@@ -72,7 +72,8 @@ int main() {
 	    std::cout << "ip link add vxlan" << vni << " type vxlan id " << vni << "dev " << device << " dstport 4789 local " << localIP << " nolearning" << std::endl;
 	    std::cout << "ip link set vxlan" << vni << " up"  << std::endl;
 	    std::cout << "ip link set vxlan" << vni << " master br" << vni << std::endl;
-	    
+
+	    // do this for each other interface associated with VNI
 	    std::cout << "fdb append <remote unique generated MAC> dev vxlan" << vni << " dst <remoteIP>" << std::endl;
 	    std::cout << "ip link add vni" << vni << " type dummy" << std::endl;
 	    std::cout << "ip link set vni" << vni << " address <unique  mac>" << std::endl;
@@ -81,6 +82,7 @@ int main() {
 	    std::cout << "ip addr add 192.168.1.1/24 dev vni" << vni << std::endl;
 
 	    // add this device to the vxlans so we track needed info to tear down
+	    // and also to fdb append macs to enable ARP
 	    vxlans[vni].emplace_back(localIP);
             res->end("Success: added endpoint " + localIP + " to VNI " + std::to_string(vni));
         } else {
