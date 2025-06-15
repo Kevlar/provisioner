@@ -1,28 +1,3 @@
-
-/network/{tenantId}
-- returns non-virtual networks owned by tenant
-
-/VXLAN/create
-- returns VNI
-/VXLAN/delete/{VNI}
-- returns status
-/VXLAN/associate/{VNI}/{endpointID}/{overlayIP}
-- returns status 
-/endpoint/{endpointID}
-- returns endpoint information (IP, subnet, mac addres)
-
-* Status codes
-200:
-- success
-404:
-- tenant not found
-- VNI not found
-- VM not found
-- VTEP not found
-409:
-- could not associate
-- could not modify/delete overlay
-
 API Design Rationale
 Focused on making small loosely-coupled data items that could be stored for quick retrieval.
 Tenants - TenantIds (implemented as UUIDs) map to a tenants resources - networks, VMs, VXLANs, etc
